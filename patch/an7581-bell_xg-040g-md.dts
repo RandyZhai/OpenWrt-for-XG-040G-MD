@@ -270,3 +270,14 @@
 &afe {
 	status = "disabled";
 };
+
+&{/soc} {
+	chip_scu: syscon@1fa20000 {
+		compatible = "airoha,en7581-chip-scu", "syscon";
+		reg = <0x0 0x1fa20000 0x0 0x388>;
+	};
+};
+
+&cpufreq {
+	airoha,chip-scu = <&chip_scu>;
+};

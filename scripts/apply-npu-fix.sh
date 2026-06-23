@@ -164,6 +164,46 @@ else
     echo "[apply-npu-fix] WARNING: $DTS_FILE not found, cannot disable AFE"
 fi
 
+# ────────────────────────────────────────────────────────────────────────────
+# Step 6: 修复 cpufreq —— 添加 chip-scu syscon 节点并引用到 cpufreq
+#         修复 "ATF SMC not available and no chip-scu reg in DT" 导致的
+#         CPU 频率锁死问题
+# ────────────────────────────────────────────────────────────────────────────
+# chip-scu 位于 SoC 总线 0x1fa20000, 大小 0x388
+if [ -f "$DTS_FILE" ]; then
+    if grep -q 'syscon@1fa20000' "$DTS_FILE" 2>/dev/null; then
+        echo "[apply-npu-fix] chip-scu syscon already in DTS (skip)"
+    else
+        echo "[apply-npu-fix] Adding chip-scu syscon@1fa20000 to $DTS_FILE"
+        # 在文件开头最后一个 #include 之后插入 SoC 级节点
+        cat >> "$DTS_FILE" << 'CHIPSCUEOF'
+
+&{/soc} {
+	chip_scu: syscon@1fa20000 {
+		compatible = "airoha,en7581-chip-scu", "syscon";
+		reg = <0x0 0x1fa20000 0x0 0x388>;
+	};
+};
+CHIPSCUEOF
+        echo "  -> Done."
+    fi
+
+    if grep -q 'airoha,chip-scu' "$DTS_FILE" 2>/dev/null; then
+        echo "[apply-npu-fix] cpufreq chip-scu reference already in DTS (skip)"
+    else
+        echo "[apply-npu-fix] Adding cpufreq chip-scu reference to $DTS_FILE"
+        cat >> "$DTS_FILE" << 'CPUFREQEOF'
+
+&cpufreq {
+	airoha,chip-scu = <&chip_scu>;
+};
+CPUFREQEOF
+        echo "  -> Done."
+    fi
+else
+    echo "[apply-npu-fix] WARNING: $DTS_FILE not found, cannot fix cpufreq"
+fi
+
 echo "[apply-npu-fix] NPU driver fixup completed."
 
 # 输出修改摘要
@@ -173,4 +213,4 @@ echo "Kernel configs patched: ${CONFIG_FILES:-none}"
 echo "netdevices.mk: $NETDEVICES_MK"
 echo "target.mk: $TARGET_MK"
 echo "device mk: $DEVICE_MK"
-echo "DTS: $DTS_FILE"
+echo "DTS (AFE + cpufreq): $DTS_FILE"
