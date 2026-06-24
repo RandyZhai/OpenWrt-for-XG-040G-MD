@@ -82,6 +82,10 @@ jobs:
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install Unidecode
 
+      - name: Clean up previous build artifacts
+        run: |
+          rm -rf openwrt
+
       - name: Clone OpenWrt source code (openwrt-25.12)
         run: |
           git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" openwrt
