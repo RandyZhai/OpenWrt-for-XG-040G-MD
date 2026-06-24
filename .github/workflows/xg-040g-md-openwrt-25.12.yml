@@ -177,6 +177,7 @@ jobs:
               exit 1
             }
           else
+            set -o pipefail
             make -j$(nproc) V=s 2>&1 | tee build.log || {
               echo "Compile failed, disk usage diagnostics:"
               df -h
@@ -186,6 +187,7 @@ jobs:
               echo "=== Retrying with single-thread (-j1 V=s) ==="
               make -j1 V=s || { echo "Compile failed even with -j1"; exit 1; }
             }
+            set +o pipefail
           fi
           DEVICE_NAME=$(grep -o 'CONFIG_TARGET.*DEVICE_[^=]*=y' .config | head -1 | sed 's/.*DEVICE_\(.*\)=y/\1/')
           if [[ -n "$DEVICE_NAME" ]]; then
