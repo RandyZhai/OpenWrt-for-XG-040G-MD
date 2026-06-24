@@ -59,6 +59,24 @@ else
 fi
 
 # ────────────────────────────────────────────────────────────────────────────
+# Step 1.5: 禁用上游新增但 config-6.18 未定义的内核选项，防止 Kconfig
+#           交互提示 (NEW) 在非交互式 CI 中导致 syncconfig 失败
+# ────────────────────────────────────────────────────────────────────────────
+NEW_KCONFIG_OPTIONS=(
+    "PHY_AIROHA_USB"
+)
+for cf in $CONFIG_FILES; do
+    for opt in "${NEW_KCONFIG_OPTIONS[@]}"; do
+        if grep -q "^CONFIG_${opt}[= ]" "$cf" 2>/dev/null; then
+            echo "  -> CONFIG_${opt}: already set (skip)"
+        else
+            echo "  -> CONFIG_${opt}: not set, disabling"
+            echo "# CONFIG_${opt} is not set" >> "$cf"
+        fi
+    done
+done
+
+# ────────────────────────────────────────────────────────────────────────────
 # Step 2: 在 netdevices.mk 中新增 kmod-airoha-npu 和 kmod-airoha-eth
 # ────────────────────────────────────────────────────────────────────────────
 NETDEVICES_MK="package/kernel/linux/modules/netdevices.mk"
