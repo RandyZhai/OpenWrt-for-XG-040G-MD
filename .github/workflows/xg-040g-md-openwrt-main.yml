@@ -175,14 +175,16 @@ jobs:
             }
           else
             set -o pipefail
-            make -j$(nproc) V=s 2>&1 | tee build.log || {
+            make -j$(nproc) V=sc 2>&1 | tee build.log || {
               echo "Compile failed, disk usage diagnostics:"
               df -h
               du -h -d1 . | sort -h | tail -n 30
-              echo "=== Build failure log (last 200 lines) ==="
-              tail -n 200 build.log
+              echo "=== Build failure log (last 300 lines) ==="
+              tail -n 300 build.log
+              echo "=== Error context ==="
+              grep -iE 'error|failed|undefined|No such file|No rule|cannot find' build.log | tail -n 50 || true
               echo "=== Retrying with single-thread (-j1 V=s) ==="
-              make -j1 V=s || { echo "Compile failed even with -j1"; exit 1; }
+              make -j1 V=s 2>&1 | tee build-retry.log || { echo "Compile failed even with -j1"; exit 1; }
             }
             set +o pipefail
           fi
@@ -194,6 +196,14 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
           echo "ccache stats (env CCACHE_DIR=$CCACHE_DIR):"
           ccache -s || true
+
+      - name: Upload build log (on failure)
+        if: failure() && steps.compile.outcome == 'failure'
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-failure-log
+          path: openwrt/build.log
+          retention-days: 7
 
       - name: Save ccache
         uses: actions/cache/save@v4
