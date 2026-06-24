@@ -177,11 +177,14 @@ jobs:
               exit 1
             }
           else
-            make -j$(nproc) || {
+            make -j$(nproc) V=s 2>&1 | tee build.log || {
               echo "Compile failed, disk usage diagnostics:"
               df -h
               du -h -d1 . | sort -h | tail -n 30
-              exit 1
+              echo "=== Build failure log (last 200 lines) ==="
+              tail -n 200 build.log
+              echo "=== Retrying with single-thread (-j1 V=s) ==="
+              make -j1 V=s || { echo "Compile failed even with -j1"; exit 1; }
             }
           fi
           DEVICE_NAME=$(grep -o 'CONFIG_TARGET.*DEVICE_[^=]*=y' .config | head -1 | sed 's/.*DEVICE_\(.*\)=y/\1/')
@@ -195,7 +198,7 @@ jobs:
 
       - name: Save ccache
         uses: actions/cache/save@v4
-        if: always()
+        if: steps.compile.outcome == 'success'
         with:
           path: /mnt/openwrt/ccache
           key: ${{ runner.os }}-openwrt-${{ env.REPO_BRANCH }}-ccache-v2-${{ github.run_id }}

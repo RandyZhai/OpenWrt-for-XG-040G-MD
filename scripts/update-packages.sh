@@ -137,6 +137,30 @@ if [ -d "openwrt-passwall-packages" ]; then
 	rm -rf openwrt-passwall-packages
 fi
 
+# iStore 应用商店
+UPDATE_PACKAGE "luci-app-store" "linkease/istore" "main" "pkg"
+UPDATE_PACKAGE "luci-lib-taskd" "linkease/istore" "main" "pkg"
+UPDATE_PACKAGE "luci-lib-xterm" "linkease/istore" "main" "pkg"
+UPDATE_PACKAGE "taskd" "linkease/istore" "main" "pkg"
+
+# luci-app-zerotier (从 immortalwrt/luci 稀疏检出)
+echo " "
+echo "=========================================="
+echo "Installing luci-app-zerotier..."
+echo "=========================================="
+git clone --depth=1 --filter=blob:none --sparse \
+  "https://github.com/immortalwrt/luci.git" luci-immortalwrt
+(
+  cd luci-immortalwrt
+  git sparse-checkout set applications/luci-app-zerotier
+)
+cp -rf luci-immortalwrt/applications/luci-app-zerotier ./luci-app-zerotier
+rm -rf luci-immortalwrt
+echo "Done: luci-app-zerotier"
+
+# 快速上网设置向导
+UPDATE_PACKAGE "luci-app-quickstart" "sirpdboy/luci-app-quickstart" "main" "name"
+
 echo " "
 echo "=========================================="
 echo "Package updates completed!"
