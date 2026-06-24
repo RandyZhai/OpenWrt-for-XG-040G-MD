@@ -1,0 +1,3 @@
+# Prevent CI interactive Kconfig prompt for Airoha USB PHY by building it as a module.
+# Setting to 'm' avoids disabling the driver while preventing interactive NEW prompts during build.
+CONFIG_PHY_AIROHA_USB=m
